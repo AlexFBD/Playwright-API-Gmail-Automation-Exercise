@@ -1,0 +1,21 @@
+{
+  "name": "gmail-spam-cleaner",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Cypress + Playwright automation that opens Gmail, navigates to the Spam folder, and empties it.",
+  "scripts": {
+    "pw:test": "playwright test",
+    "pw:headed": "playwright test --headed",
+    "pw:report": "playwright show-report",
+    "cy:open": "cypress open",
+    "cy:run": "cypress run",
+    "postinstall": "playwright install chromium"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.47.0",
+    "@types/node": "^22.5.0",
+    "cypress": "^13.14.0",
+    "dotenv": "^16.4.5",
+    "typescript": "^5.5.4"
+  }
+}
