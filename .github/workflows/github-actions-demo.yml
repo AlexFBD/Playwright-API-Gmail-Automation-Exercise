@@ -15,4 +15,5 @@ jobs:
       - name: List files in the repository
         run: |
           ls ${{ github.workspace }}
+      - run: echo "🎉 This job is triggered by a LOCAL VS Code test commit"
       - run: echo "🍏 This job's status is ${{ job.status }}."
