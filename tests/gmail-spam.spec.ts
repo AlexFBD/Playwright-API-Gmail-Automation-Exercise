@@ -1,28 +1,42 @@
 import { expect, test } from '@playwright/test';
-import { GmailSpamPage } from '../src/pages/GmailSpamPage';
-import { isDeleteConfirmed } from '../src/config';
+import {
+  getGmailApiConfig,
+  GmailApiClient,
+  hasGmailApiCredentials,
+} from '../src/gmail/GmailApiClient';
 
-test.describe('Gmail spam folder', () => {
-  let spam: GmailSpamPage;
+test.describe('Gmail Spam API', () => {
+  test.skip(
+    !hasGmailApiCredentials(),
+    'Set GMAIL_CLIENT_ID, GMAIL_CLIENT_SECRET, and GMAIL_REFRESH_TOKEN to run Gmail API tests.',
+  );
 
-  test.beforeEach(async ({ page }) => {
-    spam = new GmailSpamPage(page);
-    await spam.open();
+
+  test('number of spam messages for the authenticated account', async () => {
+    const gmail = await GmailApiClient.create(getGmailApiConfig());
+    const spamMessageIds = await gmail.listSpamMessageIds();
+    console.log(`Number of spam messages: ${spamMessageIds.length}`);
   });
 
-  test('loads the spam folder while signed in', async ({ page }) => {
-    await expect(page).toHaveURL(/#spam/);
-    console.log(`Spam messages found: ${await spam.spamCount()}`);
+  test('lists spam message subjects for the authenticated account', async () => {
+    const gmail = await GmailApiClient.create(getGmailApiConfig());
+    const messages = await gmail.listSpamMessages();
+
+    console.log(`Spam messages found: ${messages.length}`);
+    for (const { id, subject } of messages) {
+      console.log(`${id}: ${subject}`);
+    }
   });
 
-  test('empties the spam folder', async () => {
+  test('permanently deletes spam messages when confirmed', async () => {
     test.skip(
-      !isDeleteConfirmed(),
+      String(process.env.CONFIRM_DELETE).toLowerCase() !== 'true',
       'Dry run: set CONFIRM_DELETE=true to permanently delete spam.',
     );
 
-    const deleted = await spam.emptySpam();
+    const gmail = await GmailApiClient.create(getGmailApiConfig());
+    const deleted = await gmail.emptySpam();
+    await expect.poll(() => gmail.listSpamMessageIds()).toHaveLength(0);
     console.log(`Deleted ${deleted} spam message(s).`);
-    expect(await spam.spamCount()).toBe(0);
   });
 });

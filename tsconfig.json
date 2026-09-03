@@ -10,5 +10,5 @@
     "resolveJsonModule": true,
     "types": ["node"]
   },
-  "include": ["src", "tests", "playwright.config.ts", "cypress.config.ts"]
+  "include": ["src", "tests", "playwright.config.ts"]
 }
