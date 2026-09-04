@@ -1,5 +1,6 @@
 node_modules/
 .env
+client_secret*.json
 playwright-report/
 test-results/
 *.log

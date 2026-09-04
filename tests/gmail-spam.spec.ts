@@ -12,7 +12,7 @@ test.describe('Gmail Spam API', () => {
   );
 
 
-  test('number of spam messages for the authenticated account', async () => {
+  test('number of spam messages found for the authenticated account', async () => {
     const gmail = await GmailApiClient.create(getGmailApiConfig());
     const spamMessageIds = await gmail.listSpamMessageIds();
     console.log(`Number of spam messages: ${spamMessageIds.length}`);
@@ -22,16 +22,34 @@ test.describe('Gmail Spam API', () => {
     const gmail = await GmailApiClient.create(getGmailApiConfig());
     const messages = await gmail.listSpamMessages();
 
-    console.log(`Spam messages found: ${messages.length}`);
+    console.log(`Spam email subjects: `);
     for (const { id, subject } of messages) {
       console.log(`${id}: ${subject}`);
     }
   });
 
-  test('permanently deletes spam messages when confirmed', async () => {
+  test('deletes the first spam message when confirmed', async () => {
     test.skip(
-      String(process.env.CONFIRM_DELETE).toLowerCase() !== 'true',
-      'Dry run: set CONFIRM_DELETE=true to permanently delete spam.',
+      String(process.env.CONFIRM_DELETE_FIRST).toLowerCase() !== 'true',
+      'Set CONFIRM_DELETE_FIRST=true to permanently delete the first spam message.',
+    );
+
+    const gmail = await GmailApiClient.create(getGmailApiConfig());
+    const [firstMessage] = await gmail.listSpamMessages();
+    test.skip(!firstMessage, 'No spam messages are available to delete.');
+
+    console.log(`First spam message: ${firstMessage.id}: ${firstMessage.subject}`);
+    await gmail.deleteMessage(firstMessage.id);
+    await expect
+      .poll(async () => (await gmail.listSpamMessageIds()).includes(firstMessage.id))
+      .toBe(false);
+    console.log('spam message deleted');
+  });
+
+  test('permanently deletes all spam messages when confirmed', async () => {
+    test.skip(
+      String(process.env.CONFIRM_DELETE_ALL).toLowerCase() !== 'true',
+      'Dry run: set CONFIRM_DELETE_ALL=true to permanently delete all spam.',
     );
 
     const gmail = await GmailApiClient.create(getGmailApiConfig());

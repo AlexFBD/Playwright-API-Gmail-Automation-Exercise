@@ -113,6 +113,13 @@ export class GmailApiClient {
     return messages;
   }
 
+  /** Permanently deletes one message by ID. */
+  async deleteMessage(id: string): Promise<void> {
+    await this.request<void>(`/users/me/messages/${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+    });
+  }
+
   /** Permanently deletes every message currently labeled SPAM. */
   async emptySpam(): Promise<number> {
     const ids = await this.listSpamMessageIds();

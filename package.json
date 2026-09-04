@@ -7,6 +7,7 @@
     "pw:test": "playwright test",
     "pw:login": "playwright test tests/login-page.spec.ts",
     "pw:gmail-api": "playwright test tests/gmail-spam.spec.ts",
+    "gmail:authorize": "node scripts/generate-gmail-refresh-token.mjs",
     "pw:headed": "playwright test --headed",
     "pw:report": "playwright show-report",
     "postinstall": "playwright install chromium"

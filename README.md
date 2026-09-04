@@ -1,6 +1,6 @@
 # Gmail Spam Cleaner — Playwright + Gmail API
 
-Playwright runs a public Gmail-login smoke test and a protected Gmail API integration
+Playwright runs a public Gmail-login UI smoke test and a protected Gmail API integration
 test that can permanently empty the authenticated account's **Spam** folder.
 
 ## Setup
@@ -12,9 +12,10 @@ cp .env.example .env
 
 ## Running
 
-The login tests require no credentials. The Gmail API suite is skipped unless all OAuth
-variables below are set. Deletion is disabled by default; set `CONFIRM_DELETE=true` in
-`.env` only when you intend to permanently delete spam.
+The UI login tests require no credentials. The Gmail API suite is skipped unless all OAuth
+variables below are set. Deletion is disabled by default. Use
+`CONFIRM_DELETE_FIRST=true` for the single-message test or `CONFIRM_DELETE_ALL=true`
+for the bulk-delete test; these confirmations are deliberately separate.
 
 ```
 npm run pw:test       # All Playwright tests; Gmail API tests skip without credentials
@@ -24,14 +25,35 @@ npm run pw:headed     # watch it happen
 npm run pw:report     # HTML report
 ```
 
+To run only the single-message deletion test, without enabling bulk deletion:
+
+```
+npx playwright test tests/gmail-spam.spec.ts --grep "deletes the first"
+```
+
 ## Gmail API setup
 
 1. Create a Google Cloud project, enable the Gmail API, and create an OAuth 2.0 client.
-2. Obtain a refresh token for that client using offline access and the
+2. Download its client-secret JSON file outside this repository, then run the one-time
+   helper below. For a **Desktop** OAuth client, it uses a local loopback callback
+   automatically. For a **Web** client, first register an exact local redirect URI in
+   Google Cloud, such as `http://127.0.0.1:3000/oauth2callback`.
+
+   ```
+   npm run gmail:authorize -- /absolute/path/to/client_secret.json
+   # Web client only:
+   npm run gmail:authorize -- /absolute/path/to/client_secret.json \\
+     --redirect-uri http://127.0.0.1:3000/oauth2callback
+   ```
+
+   The helper prints only `GMAIL_CLIENT_ID`, `GMAIL_CLIENT_SECRET`, and
+   `GMAIL_REFRESH_TOKEN` after browser consent. Copy those into `.env` and then
+   delete or securely store the downloaded JSON file.
+3. The authorization flow requests offline access and the
    `https://mail.google.com/` scope. This full scope is required by Gmail's permanent
    [`messages.batchDelete`](https://developers.google.com/workspace/gmail/api/reference/rest/v1/users.messages/batchDelete)
    endpoint.
-3. Add `GMAIL_CLIENT_ID`, `GMAIL_CLIENT_SECRET`, and `GMAIL_REFRESH_TOKEN` to `.env`.
+4. Add `GMAIL_CLIENT_ID`, `GMAIL_CLIENT_SECRET`, and `GMAIL_REFRESH_TOKEN` to `.env`.
    Never commit this file. Store the same values as repository/environment secrets for
    a future protected GitHub Actions workflow.
 
