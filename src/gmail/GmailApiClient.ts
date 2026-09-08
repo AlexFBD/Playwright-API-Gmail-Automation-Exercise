@@ -1,6 +1,7 @@
 const GMAIL_API_ORIGIN = 'https://gmail.googleapis.com/gmail/v1';
 const OAUTH_TOKEN_URL = 'https://oauth2.googleapis.com/token';
 const PAGE_SIZE = 500;
+const MAX_TRASH_MESSAGE_METADATA = 50;
 
 export type GmailApiConfig = {
   clientId: string;
@@ -8,7 +9,7 @@ export type GmailApiConfig = {
   refreshToken: string;
 };
 
-export type GmailSpamMessage = {
+export type GmailMessageSummary = {
   id: string;
   subject: string;
 };
@@ -70,31 +71,62 @@ export class GmailApiClient {
   }
 
   async listSpamMessageIds(): Promise<string[]> {
+    return this.listMessageIdsByLabel('SPAM');
+  }
+
+  async listTrashMessageIds(): Promise<string[]> {
+    return this.listMessageIdsByLabel('TRASH');
+  }
+
+  private async listMessageIdsByLabel(
+    labelId: 'SPAM' | 'TRASH',
+    limit?: number,
+  ): Promise<string[]> {
+    if (limit !== undefined && (!Number.isInteger(limit) || limit < 1)) {
+      throw new Error('Message-list limit must be a positive integer.');
+    }
+
     const ids: string[] = [];
     let pageToken: string | undefined;
 
     do {
+      const remaining = limit === undefined ? PAGE_SIZE : limit - ids.length;
       const query = new URLSearchParams({
-        labelIds: 'SPAM',
+        labelIds: labelId,
         includeSpamTrash: 'true',
-        maxResults: String(PAGE_SIZE),
+        maxResults: String(Math.min(PAGE_SIZE, remaining)),
       });
       if (pageToken) query.set('pageToken', pageToken);
 
       const page = await this.request<MessageListResponse>(
         `/users/me/messages?${query.toString()}`,
       );
-      ids.push(...(page.messages ?? []).map((message) => message.id));
+      ids.push(...(page.messages ?? []).slice(0, remaining).map((message) => message.id));
       pageToken = page.nextPageToken;
-    } while (pageToken);
+    } while (pageToken && (limit === undefined || ids.length < limit));
 
     return ids;
   }
 
   /** Lists Spam message IDs and their Subject headers, without reading message bodies. */
-  async listSpamMessages(): Promise<GmailSpamMessage[]> {
-    const ids = await this.listSpamMessageIds();
-    const messages: GmailSpamMessage[] = [];
+  async listSpamMessages(): Promise<GmailMessageSummary[]> {
+    return this.listMessagesByLabel('SPAM');
+  }
+
+  /** Lists up to 50 Bin message IDs and Subject headers, without reading message bodies. */
+  async listTrashMessages(limit = MAX_TRASH_MESSAGE_METADATA): Promise<GmailMessageSummary[]> {
+    return this.listMessagesByLabel(
+      'TRASH',
+      Math.min(limit, MAX_TRASH_MESSAGE_METADATA),
+    );
+  }
+
+  private async listMessagesByLabel(
+    labelId: 'SPAM' | 'TRASH',
+    limit?: number,
+  ): Promise<GmailMessageSummary[]> {
+    const ids = await this.listMessageIdsByLabel(labelId, limit);
+    const messages: GmailMessageSummary[] = [];
 
     for (const id of ids) {
       const query = new URLSearchParams({
@@ -122,7 +154,16 @@ export class GmailApiClient {
 
   /** Permanently deletes every message currently labeled SPAM. */
   async emptySpam(): Promise<number> {
-    const ids = await this.listSpamMessageIds();
+    return this.emptyMessagesByLabel('SPAM');
+  }
+
+  /** Permanently deletes every message currently labeled TRASH. */
+  async emptyTrash(): Promise<number> {
+    return this.emptyMessagesByLabel('TRASH');
+  }
+
+  private async emptyMessagesByLabel(labelId: 'SPAM' | 'TRASH'): Promise<number> {
+    const ids = await this.listMessageIdsByLabel(labelId);
 
     for (let index = 0; index < ids.length; index += PAGE_SIZE) {
       await this.request<void>('/users/me/messages/batchDelete', {

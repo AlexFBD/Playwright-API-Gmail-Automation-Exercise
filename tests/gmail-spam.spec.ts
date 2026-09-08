@@ -30,8 +30,8 @@ test.describe('Gmail Spam API', () => {
 
   test('deletes the first spam message when confirmed', async () => {
     test.skip(
-      String(process.env.CONFIRM_DELETE_FIRST).toLowerCase() !== 'true',
-      'Set CONFIRM_DELETE_FIRST=true to permanently delete the first spam message.',
+      String(process.env.CONFIRM_DELETE_SPAM_FIRST).toLowerCase() !== 'true',
+      'Set CONFIRM_DELETE_SPAM_FIRST=true to permanently delete the first spam message.',
     );
 
     const gmail = await GmailApiClient.create(getGmailApiConfig());
@@ -48,8 +48,8 @@ test.describe('Gmail Spam API', () => {
 
   test('permanently deletes all spam messages when confirmed', async () => {
     test.skip(
-      String(process.env.CONFIRM_DELETE_ALL).toLowerCase() !== 'true',
-      'Dry run: set CONFIRM_DELETE_ALL=true to permanently delete all spam.',
+      String(process.env.CONFIRM_DELETE_SPAM_ALL).toLowerCase() !== 'true',
+      'Dry run: set CONFIRM_DELETE_SPAM_ALL=true to permanently delete all spam.',
     );
 
     const gmail = await GmailApiClient.create(getGmailApiConfig());

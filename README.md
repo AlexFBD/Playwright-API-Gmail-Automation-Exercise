@@ -1,7 +1,8 @@
-# Gmail Spam Cleaner — Playwright + Gmail API
+# Gmail Spam and Bin Cleaner — Playwright + Gmail API
 
 Playwright runs a public Gmail-login UI smoke test and a protected Gmail API integration
-test that can permanently empty the authenticated account's **Spam** folder.
+suite that can list and permanently clean the authenticated account's **Spam** and
+**Bin** folders.
 
 ## Setup
 
@@ -14,21 +15,19 @@ cp .env.example .env
 
 The UI login tests require no credentials. The Gmail API suite is skipped unless all OAuth
 variables below are set. Deletion is disabled by default. Use
-`CONFIRM_DELETE_FIRST=true` for the single-message test or `CONFIRM_DELETE_ALL=true`
-for the bulk-delete test; these confirmations are deliberately separate.
+`CONFIRM_DELETE_SPAM_FIRST=true` for one Spam message or `CONFIRM_DELETE_SPAM_ALL=true` for all
+Spam messages; these confirmations are deliberately separate.
+Bin deletion uses separate flags: `CONFIRM_DELETE_BIN_FIRST=true` for one email and
+`CONFIRM_DELETE_BIN_ALL=true` for every email in the Bin.
 
 ```
 npm run pw:test       # All Playwright tests; Gmail API tests skip without credentials
 npm run pw:login      # Public, signed-out Google login checks
-npm run pw:gmail-api  # Protected Gmail API integration tests
+npx playwright test tests/login-page.spec.ts --headed     # Signed-out Google login checks headed
+npm run pw:gmail-api  # Protected Gmail Spam API integration tests
+npx playwright test tests/gmail-bin.spec.ts  # Protected Gmail Bin API integration tests
 npm run pw:headed     # watch it happen
 npm run pw:report     # HTML report
-```
-
-To run only the single-message deletion test, without enabling bulk deletion:
-
-```
-npx playwright test tests/gmail-spam.spec.ts --grep "deletes the first"
 ```
 
 ## Gmail API setup
@@ -59,8 +58,8 @@ npx playwright test tests/gmail-spam.spec.ts --grep "deletes the first"
 
 Google's [OAuth web-server flow](https://developers.google.com/identity/protocols/oauth2/web-server)
 describes obtaining and using a refresh token. The API client pages through Gmail's
-Spam label (up to 500 messages per request) and uses `batchDelete`; this is supported
-API automation rather than browser UI automation.
+Spam and Bin labels (up to 500 messages per request) and uses `batchDelete`; this is
+supported API automation rather than browser UI automation.
 
 The public login smoke tests need no session at all:
 
@@ -72,21 +71,23 @@ npx playwright test tests/login-page.spec.ts
 
 | Path | Purpose |
 | --- | --- |
-| `src/gmail/GmailApiClient.ts` | OAuth refresh and Gmail Spam API client |
-| `tests/login-page.spec.ts` | Signed-out smoke tests against the Google login page |
-| `tests/gmail-spam.spec.ts` | Guarded Gmail API integration tests |
+| `src/gmail/GmailApiClient.ts` | OAuth refresh and Gmail Spam/Bin API client |
+| `tests/login-page.spec.ts` | Signed-out smoke UI tests against the Google login page |
+| `tests/gmail-spam.spec.ts` | Guarded Gmail Spam API integration tests |
+| `tests/gmail-bin.spec.ts` | Guarded Gmail Bin API integration tests |
 | `.env.example` | Required Gmail API environment-variable names |
 
 ## Delete strategy
 
 1. Refresh an OAuth access token using the stored refresh token.
-2. List every message with Gmail's `SPAM` label.
-3. Call Gmail's `batchDelete` endpoint for the returned IDs.
-4. Poll until the Spam label is empty.
+2. List messages with Gmail's `SPAM` or `TRASH` label.
+3. List message subjects, delete one selected message, or call Gmail's `batchDelete`
+   endpoint for a confirmed bulk cleanup.
+4. Poll until the relevant Spam or Bin label is empty after a bulk cleanup.
 
 ## Known limitations
 
-- Emptying spam is **permanent**. There is no undo.
+- Permanently deleting Spam or Bin messages is **permanent**. There is no undo.
 - `messages.batchDelete` requires the broad `https://mail.google.com/` scope. Use a
   dedicated account and keep its refresh token only in secure local storage or GitHub
   Secrets.
