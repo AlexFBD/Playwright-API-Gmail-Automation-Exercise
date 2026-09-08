@@ -21,7 +21,7 @@ test.describe('Gmail Bin API', () => {
   test('lists the first 20 emails in the Bin folder', async () => {
     const gmail = await GmailApiClient.create(getGmailApiConfig());
     const messages = await gmail.listTrashMessages(20);
-
+    expect(messages.length).toBeLessThanOrEqual(20);
     console.log(`First ${messages.length} emails in Bin:`);
     for (const { id, subject } of messages) {
       console.log(`${id}: ${subject}`);
