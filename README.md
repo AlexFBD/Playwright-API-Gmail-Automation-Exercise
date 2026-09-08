@@ -15,7 +15,7 @@ cp .env.example .env
 
 The UI login tests require no credentials. The Gmail API suite is skipped unless all OAuth
 variables below are set. Deletion is disabled by default. Use
-`CONFIRM_DELETE_FIRST=true` for one Spam message or `CONFIRM_DELETE_ALL=true` for all
+`CONFIRM_DELETE_SPAM_FIRST=true` for one Spam message or `CONFIRM_DELETE_SPAM_ALL=true` for all
 Spam messages; these confirmations are deliberately separate.
 Bin deletion uses separate flags: `CONFIRM_DELETE_BIN_FIRST=true` for one email and
 `CONFIRM_DELETE_BIN_ALL=true` for every email in the Bin.
@@ -23,16 +23,11 @@ Bin deletion uses separate flags: `CONFIRM_DELETE_BIN_FIRST=true` for one email 
 ```
 npm run pw:test       # All Playwright tests; Gmail API tests skip without credentials
 npm run pw:login      # Public, signed-out Google login checks
+npx playwright test tests/login-page.spec.ts --headed     # Signed-out Google login checks headed
 npm run pw:gmail-api  # Protected Gmail Spam API integration tests
 npx playwright test tests/gmail-bin.spec.ts  # Protected Gmail Bin API integration tests
 npm run pw:headed     # watch it happen
 npm run pw:report     # HTML report
-```
-
-To run only the single-message Spam deletion test, without enabling bulk deletion:
-
-```
-npx playwright test tests/gmail-spam.spec.ts --grep "deletes the first"
 ```
 
 ## Gmail API setup
@@ -77,7 +72,7 @@ npx playwright test tests/login-page.spec.ts
 | Path | Purpose |
 | --- | --- |
 | `src/gmail/GmailApiClient.ts` | OAuth refresh and Gmail Spam/Bin API client |
-| `tests/login-page.spec.ts` | Signed-out smoke tests against the Google login page |
+| `tests/login-page.spec.ts` | Signed-out smoke UI tests against the Google login page |
 | `tests/gmail-spam.spec.ts` | Guarded Gmail Spam API integration tests |
 | `tests/gmail-bin.spec.ts` | Guarded Gmail Bin API integration tests |
 | `.env.example` | Required Gmail API environment-variable names |

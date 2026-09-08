@@ -20,10 +20,10 @@ test.describe('Gmail Bin API', () => {
 
   test('lists the first 20 emails in the Bin folder', async () => {
     const gmail = await GmailApiClient.create(getGmailApiConfig());
-    const messages = await gmail.listTrashMessages();
+    const messages = await gmail.listTrashMessages(20);
 
-    console.log(`First ${Math.min(messages.length, 20)} emails in Bin:`);
-    for (const { id, subject } of messages.slice(0, 20)) {
+    console.log(`First ${messages.length} emails in Bin:`);
+    for (const { id, subject } of messages) {
       console.log(`${id}: ${subject}`);
     }
   });
@@ -35,7 +35,7 @@ test.describe('Gmail Bin API', () => {
     );
 
     const gmail = await GmailApiClient.create(getGmailApiConfig());
-    const [firstMessage] = await gmail.listTrashMessages();
+    const [firstMessage] = await gmail.listTrashMessages(1);
     test.skip(!firstMessage, 'No emails are available in the Bin.');
 
     console.log(`First Bin email: ${firstMessage.id}: ${firstMessage.subject}`);
