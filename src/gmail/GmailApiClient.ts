@@ -70,12 +70,20 @@ export class GmailApiClient {
   }
 
   async listSpamMessageIds(): Promise<string[]> {
+    return this.listMessageIdsByLabel('SPAM');
+  }
+
+  async listTrashMessageIds(): Promise<string[]> {
+    return this.listMessageIdsByLabel('TRASH');
+  }
+
+  private async listMessageIdsByLabel(labelId: 'SPAM' | 'TRASH'): Promise<string[]> {
     const ids: string[] = [];
     let pageToken: string | undefined;
 
     do {
       const query = new URLSearchParams({
-        labelIds: 'SPAM',
+        labelIds: labelId,
         includeSpamTrash: 'true',
         maxResults: String(PAGE_SIZE),
       });
@@ -93,7 +101,16 @@ export class GmailApiClient {
 
   /** Lists Spam message IDs and their Subject headers, without reading message bodies. */
   async listSpamMessages(): Promise<GmailSpamMessage[]> {
-    const ids = await this.listSpamMessageIds();
+    return this.listMessagesByLabel('SPAM');
+  }
+
+  /** Lists Bin message IDs and their Subject headers, without reading message bodies. */
+  async listTrashMessages(): Promise<GmailSpamMessage[]> {
+    return this.listMessagesByLabel('TRASH');
+  }
+
+  private async listMessagesByLabel(labelId: 'SPAM' | 'TRASH'): Promise<GmailSpamMessage[]> {
+    const ids = await this.listMessageIdsByLabel(labelId);
     const messages: GmailSpamMessage[] = [];
 
     for (const id of ids) {
@@ -122,7 +139,16 @@ export class GmailApiClient {
 
   /** Permanently deletes every message currently labeled SPAM. */
   async emptySpam(): Promise<number> {
-    const ids = await this.listSpamMessageIds();
+    return this.emptyMessagesByLabel('SPAM');
+  }
+
+  /** Permanently deletes every message currently labeled TRASH. */
+  async emptyTrash(): Promise<number> {
+    return this.emptyMessagesByLabel('TRASH');
+  }
+
+  private async emptyMessagesByLabel(labelId: 'SPAM' | 'TRASH'): Promise<number> {
+    const ids = await this.listMessageIdsByLabel(labelId);
 
     for (let index = 0; index < ids.length; index += PAGE_SIZE) {
       await this.request<void>('/users/me/messages/batchDelete', {
