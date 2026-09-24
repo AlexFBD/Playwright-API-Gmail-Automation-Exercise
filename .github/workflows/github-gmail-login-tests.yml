@@ -1,6 +1,6 @@
 name: Gmail Login Page Tests
 
-run-name: Gmail login tests for ${{ github.ref_name }}
+run-name: Gmail login and mocked API tests for ${{ github.ref_name }}
 
 on:
   push:
@@ -15,7 +15,7 @@ concurrency:
 
 jobs:
   login-tests:
-    name: Type check and Gmail login tests
+    name: Gmail Login Page and mocked API tests
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -40,6 +40,9 @@ jobs:
 
       - name: Run signed-out Gmail login tests
         run: npx playwright test tests/login-page.spec.ts
+
+      - name: Run mocked Gmail API tests
+        run: npx playwright test tests/gmail-bin.mock.spec.ts tests/gmail-spam.mock.spec.ts
 
       - name: Upload Playwright artifacts on failure
         if: failure()

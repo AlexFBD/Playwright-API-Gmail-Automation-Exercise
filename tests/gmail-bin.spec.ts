@@ -15,13 +15,18 @@ test.describe('Gmail Bin API', () => {
     const gmail = await GmailApiClient.create(getGmailApiConfig());
     const deletedMessageIds = await gmail.listTrashMessageIds();
 
+    expect(deletedMessageIds.every((id) => id.length > 0)).toBe(true);
+    expect(new Set(deletedMessageIds).size).toBe(deletedMessageIds.length);
     console.log(`Number of deleted emails in Bin: ${deletedMessageIds.length}`);
   });
 
-  test('lists the first 20 emails in the Bin folder', async () => {
+  test('lists the first 30 emails in the Bin folder', async () => {
     const gmail = await GmailApiClient.create(getGmailApiConfig());
-    const messages = await gmail.listTrashMessages(20);
-    expect(messages.length).toBeLessThanOrEqual(20);
+    const messages = await gmail.listTrashMessages(30);
+
+    expect(messages.length).toBeLessThanOrEqual(30);
+    expect(messages.every(({ id, subject }) => id.length > 0 && subject.length > 0)).toBe(true);
+    expect(new Set(messages.map(({ id }) => id)).size).toBe(messages.length);
     console.log(`First ${messages.length} emails in Bin:`);
     for (const { id, subject } of messages) {
       console.log(`${id}: ${subject}`);

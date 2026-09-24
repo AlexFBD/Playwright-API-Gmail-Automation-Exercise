@@ -15,6 +15,9 @@ test.describe('Gmail Spam API', () => {
   test('number of spam messages found for the authenticated account', async () => {
     const gmail = await GmailApiClient.create(getGmailApiConfig());
     const spamMessageIds = await gmail.listSpamMessageIds();
+
+    expect(spamMessageIds.every((id) => id.length > 0)).toBe(true);
+    expect(new Set(spamMessageIds).size).toBe(spamMessageIds.length);
     console.log(`Number of spam messages: ${spamMessageIds.length}`);
   });
 
@@ -22,7 +25,9 @@ test.describe('Gmail Spam API', () => {
     const gmail = await GmailApiClient.create(getGmailApiConfig());
     const messages = await gmail.listSpamMessages();
 
-    console.log(`Spam email subjects: `);
+    expect(messages.every(({ id, subject }) => id.length > 0 && subject.length > 0)).toBe(true);
+    expect(new Set(messages.map(({ id }) => id)).size).toBe(messages.length);
+    console.log('Spam email subjects:');
     for (const { id, subject } of messages) {
       console.log(`${id}: ${subject}`);
     }
